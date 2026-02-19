@@ -40,6 +40,13 @@
       },
       "enableHostedAgents": {
         "value": "${ENABLE_HOSTED_AGENTS=false}"
+      },
+      "existingContainerRegistryResourceId": {
+        "value": "${AZURE_CONTAINER_REGISTRY_RESOURCE_ID=}"
+      },
+      "existingContainerRegistryEndpoint": {
+        "value": "${AZURE_CONTAINER_REGISTRY_ENDPOINT=}"
       }
     }
 }
+
