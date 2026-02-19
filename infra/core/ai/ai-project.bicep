@@ -263,6 +263,25 @@ module existingAcrConnection './connection.bicep' = if (hasExistingAcr) {
   }
 }
 
+// Extract resource group name from the existing ACR resource ID
+// Resource ID format: /subscriptions/{sub}/resourceGroups/{rg}/providers/Microsoft.ContainerRegistry/registries/{name}
+var existingAcrResourceGroup = hasExistingAcr ? split(existingContainerRegistryResourceId, '/')[4] : ''
+var existingAcrName = hasExistingAcr ? last(split(existingContainerRegistryResourceId, '/')) : ''
+
+// Grant AcrPull role to the AI project's managed identity on the existing ACR
+// This allows the hosted agents to pull images from the user-provided registry
+// Note: User must have permission to assign roles on the existing ACR (Owner or User Access Administrator)
+// Using a module allows scoping to a different resource group if the ACR isn't in the same RG
+module existingAcrRoleAssignment './acr-role-assignment.bicep' = if (hasExistingAcr) {
+  name: 'existing-acr-role-assignment'
+  scope: resourceGroup(existingAcrResourceGroup)
+  params: {
+    acrName: existingAcrName
+    acrResourceId: existingContainerRegistryResourceId
+    principalId: aiAccount::project.identity.principalId
+  }
+}
+
 // Bing Search grounding module - deploy if Bing connection is defined in ai.yaml or parameter is enabled
 module bingGrounding '../search/bing_grounding.bicep' = if (hasBingConnection) {
   name: 'bing-grounding'
@@ -377,4 +396,5 @@ type dependentResourcesType = {
   @description('The connection name for this resource')
   connectionName: string
 }[]
+
 
