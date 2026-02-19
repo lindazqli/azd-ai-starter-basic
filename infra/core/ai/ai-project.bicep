@@ -34,12 +34,19 @@ param enableMonitoring bool = true
 @description('Enable hosted agent deployment')
 param enableHostedAgents bool = false
 
+@description('Optional. Existing container registry resource ID. If provided, a connection will be created to this ACR instead of creating a new one.')
+param existingContainerRegistryResourceId string = ''
+
+@description('Optional. Existing container registry login server (e.g., myregistry.azurecr.io). Required if existingContainerRegistryResourceId is provided.')
+param existingContainerRegistryEndpoint string = ''
+
 // Load abbreviations
 var abbrs = loadJsonContent('../../abbreviations.json')
 
 // Determine which resources to create based on connections
 var hasStorageConnection = length(filter(additionalDependentResources, conn => conn.resource == 'storage')) > 0
 var hasAcrConnection = length(filter(additionalDependentResources, conn => conn.resource == 'registry')) > 0
+var hasExistingAcr = !empty(existingContainerRegistryResourceId)
 var hasSearchConnection = length(filter(additionalDependentResources, conn => conn.resource == 'azure_ai_search')) > 0
 var hasBingConnection = length(filter(additionalDependentResources, conn => conn.resource == 'bing_grounding')) > 0
 var hasBingCustomConnection = length(filter(additionalDependentResources, conn => conn.resource == 'bing_custom_grounding')) > 0
@@ -233,6 +240,29 @@ module acr '../host/acr.bicep' = if (hasAcrConnection) {
   }
 }
 
+// Connection for existing ACR - create if user provided an existing ACR resource ID
+module existingAcrConnection './connection.bicep' = if (hasExistingAcr) {
+  name: 'existing-acr-connection'
+  params: {
+    aiServicesAccountName: aiAccount.name
+    aiProjectName: aiAccount::project.name
+    connectionConfig: {
+      name: 'acr-connection'
+      category: 'ContainerRegistry'
+      target: existingContainerRegistryEndpoint
+      authType: 'ManagedIdentity'
+      credentials: {
+        clientId: aiAccount::project.identity.principalId
+        resourceId: existingContainerRegistryResourceId
+      }
+      isSharedToAll: true
+      metadata: {
+        ResourceId: existingContainerRegistryResourceId
+      }
+    }
+  }
+}
+
 // Bing Search grounding module - deploy if Bing connection is defined in ai.yaml or parameter is enabled
 module bingGrounding '../search/bing_grounding.bicep' = if (hasBingConnection) {
   name: 'bing-grounding'
@@ -291,8 +321,8 @@ output APPLICATIONINSIGHTS_CONNECTION_STRING string = applicationInsights.output
 output dependentResources object = {
   registry: {
     name: hasAcrConnection ? acr!.outputs.containerRegistryName : ''
-    loginServer: hasAcrConnection ? acr!.outputs.containerRegistryLoginServer : ''
-    connectionName: hasAcrConnection ? acr!.outputs.containerRegistryConnectionName : ''
+    loginServer: hasAcrConnection ? acr!.outputs.containerRegistryLoginServer : (hasExistingAcr ? existingContainerRegistryEndpoint : '')
+    connectionName: hasAcrConnection ? acr!.outputs.containerRegistryConnectionName : (hasExistingAcr ? 'acr-connection' : '')
   }
   bing_grounding: {
     name: (hasBingConnection) ? bingGrounding!.outputs.bingGroundingName : ''
@@ -347,3 +377,4 @@ type dependentResourcesType = {
   @description('The connection name for this resource')
   connectionName: string
 }[]
+
