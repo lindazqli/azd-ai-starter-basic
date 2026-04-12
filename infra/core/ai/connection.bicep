@@ -18,7 +18,7 @@ type ConnectionConfig = {
   target: string
 
   @description('Authentication type')
-  authType: 'AAD' | 'AccessKey' | 'AccountKey' | 'ApiKey' | 'CustomKeys' | 'ManagedIdentity' | 'None' | 'OAuth2' | 'PAT' | 'SAS' | 'ServicePrincipal' | 'UsernamePassword'
+  authType: 'AAD' | 'AccessKey' | 'AccountKey' | 'AgenticIdentity' | 'ApiKey' | 'CustomKeys' | 'ManagedIdentity' | 'None' | 'OAuth2' | 'PAT' | 'SAS' | 'ServicePrincipal' | 'UsernamePassword' | 'UserEntraToken'
 
   @description('Whether the connection is shared to all users (optional, defaults to true)')
   isSharedToAll: bool?
@@ -43,6 +43,24 @@ type ConnectionConfig = {
 
   @description('Whether to use workspace managed identity (optional)')
   useWorkspaceManagedIdentity: bool?
+
+  @description('OAuth2 authorization endpoint URL (optional, OAuth2 authType only)')
+  authorizationUrl: string?
+
+  @description('OAuth2 token endpoint URL (optional, OAuth2 authType only)')
+  tokenUrl: string?
+
+  @description('OAuth2 refresh token endpoint URL (optional, OAuth2 authType only)')
+  refreshUrl: string?
+
+  @description('OAuth2 scopes to request (optional, OAuth2 authType only)')
+  scopes: string[]?
+
+  @description('Token audience for UserEntraToken / AgenticIdentity auth types (optional)')
+  audience: string?
+
+  @description('Managed connector name for OAuth2 managed connectors (optional)')
+  connectorName: string?
 }
 
 @description('Connection configuration')
@@ -80,6 +98,12 @@ resource connection 'Microsoft.CognitiveServices/accounts/projects/connections@2
     ...connectionConfig.?peStatus != null ? { peStatus: connectionConfig.?peStatus  } : {}
     ...connectionConfig.?sharedUserList != null ? { sharedUserList: connectionConfig.?sharedUserList  } : {}
     ...connectionConfig.?useWorkspaceManagedIdentity != null ? { useWorkspaceManagedIdentity: connectionConfig.?useWorkspaceManagedIdentity  } : {}
+    ...connectionConfig.?authorizationUrl != null ? { authorizationUrl: connectionConfig.?authorizationUrl } : {}
+    ...connectionConfig.?tokenUrl != null ? { tokenUrl: connectionConfig.?tokenUrl } : {}
+    ...connectionConfig.?refreshUrl != null ? { refreshUrl: connectionConfig.?refreshUrl } : {}
+    ...connectionConfig.?scopes != null ? { scopes: connectionConfig.?scopes } : {}
+    ...connectionConfig.?audience != null ? { audience: connectionConfig.?audience } : {}
+    ...connectionConfig.?connectorName != null ? { connectorName: connectionConfig.?connectorName } : {}
   }
 }
 
