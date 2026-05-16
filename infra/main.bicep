@@ -173,6 +173,8 @@ module existingAiProject 'core/ai/existing-ai-project.bicep' = if (useExistingAi
     existingContainerRegistryEndpoint: existingContainerRegistryEndpoint
     existingApplicationInsightsConnectionString: existingApplicationInsightsConnectionString
     existingApplicationInsightsResourceId: existingApplicationInsightsResourceId
+    connections: aiProjectConnections
+    connectionCredentials: aiProjectConnectionCreds
   }
 }
 
